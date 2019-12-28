@@ -1,0 +1,93 @@
+---
+title: "Reproducible research / activity"
+author: "Mikael Herve"
+date: "12/22/2019"
+output: html_document
+---
+
+# **Question 1: What is mean total number of steps taken per day?**
+
+```{r question 1, echo=TRUE}
+library(dplyr)
+library(knitr)
+activity <- read.csv("activity.csv")
+
+day1<- activity %>% group_by(date) %>% filter(steps != "NA") %>% summarize(sum=sum(steps)) 
+hist(day1$sum,breaks = seq(0,25000,1000),xlab="Steps per day",main = "Histogram of activity")
+
+mean<-mean(day1$sum)
+median<-median((day1$sum))
+
+cat("Mean steps per day:",mean,"\n")
+cat("Median steps per day:",median)
+
+```
+
+# **Question 2: What is the average daily activity pattern?**
+
+```{r question 2, echo=TRUE}
+library(dplyr)
+library(knitr)
+activity <- read.csv("activity.csv")
+
+average<- activity %>% group_by(interval) %>% filter(steps != "NA") %>% summarize(mean=mean(steps)) 
+plot(average$interval,average$mean,type = "l",xlab = "Daily 5-minute interval", ylab="average steps",main = "Average daily activity pattern")
+
+index <-which.max(average$mean)
+max<-average[index,1]
+cat("Peak activity is at interval:", max$interval)
+
+```
+
+# **Question 3: Inputting missing values**
+
+```{r quesiton 3, echo=TRUE}
+library(dplyr)
+library(knitr)
+activity <- read.csv("activity.csv")
+
+missing<-sum(is.na(activity$steps))
+cat("number of missing values:", missing)
+
+new_activity<-activity
+na<-is.na(new_activity$steps)
+avg<-tapply(new_activity$steps, new_activity$interval, mean, na.rm=TRUE, simplify = TRUE)
+new_activity$steps[na]<-avg[as.character(new_activity$interval[na])]
+
+day2<- new_activity %>% group_by(date) %>% summarize(sum=sum(steps)) 
+hist(day2$sum, breaks = seq(0,25000,1000),xlab="Steps per day",main = "Histogram of activity")
+
+mean2<-mean(day2$sum)
+median2<-median((day2$sum))
+cat("Mean steps per day:",mean2,"\n")
+cat("Median steps per day:",median2)
+```
+
+# **Question 4: Are there differences in activity patterns between weekdays and weekends?**
+```{r quesiton 4, echo=TRUE}
+library(dplyr)
+library(knitr)
+library(lattice)
+activity <- read.csv("activity.csv")
+
+missing<-sum(is.na(activity$steps))
+
+new_activity<-activity
+na<-is.na(new_activity$steps)
+avg<-tapply(new_activity$steps, new_activity$interval, mean, na.rm=TRUE, simplify = TRUE)
+new_activity$steps[na]<-avg[as.character(new_activity$interval[na])]
+
+new_activity$day<-weekdays(as.Date(new_activity$date))
+for(i in 1:nrow(new_activity)){
+  if(new_activity[i,]$day %in% c("Saturday", "Sunday")){
+    new_activity[i,]$day<-"Weekend"
+  }
+  else{
+    new_activity[i,]$day<-"Weekday"
+  }
+}
+
+final<- new_activity %>% group_by(day,interval) %>% summarise(mean_steps=mean(steps))
+graph<-xyplot(mean_steps~interval|day,data = final,type="l",layout=c(1,2),xlab="interval",ylab="average steps")
+plot(graph)
+```
